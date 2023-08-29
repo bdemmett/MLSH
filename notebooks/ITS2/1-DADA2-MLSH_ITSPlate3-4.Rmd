@@ -7,7 +7,7 @@ output: html_notebook
 # if (!require("BiocManager", quietly = TRUE))
 #     install.packages("BiocManager")
 # 
-# BiocManager::install("dada2")
+#BiocManager::install("phyloseq")
 
 ```
 
@@ -21,6 +21,7 @@ library(tidyverse)
 library(dada2)
 library(ShortRead)
 library(Biostrings)
+library(phyloseq)
 
 ```
 
@@ -423,43 +424,66 @@ dim(taxa)
 
 ```{r}
 # read sample data
+SamTab = "/project/mmicrobe/MLSH/ITS2/MLSH_ITSMap.csv"
 samdf = read.delim(file = SamTab, header = TRUE, sep = ',')
 head(samdf)
-row.names(samdf) = samdf$X
-samdf = samdf[,-1]
+row.names(samdf) = samdf$Sample.ID
+samdf = samdf[,-3]
 rownames(samdf)[1:4]
 ```
+
 ```{r}
 dim(samdf)
 ```
 
 ```{r}
+colnames(taxa)
 #rename taxa
 taxa = cbind(taxa, row.names(taxa))
 
-colnames(taxa)[7] = "Seq"
+colnames(taxa)[8] = "Seq"
+```
+##fix sample names
+```{r}
+NewNames = rownames(seqtab.nochim)
+
+#NewNames=strsplit(NewNames, "_S", 1)
+NewNames = str_split(NewNames, "_S", simplify = TRUE)[,1]
+
+rownames(seqtab.nochim) = NewNames
+#NewNames
 ```
 
-```{r}
-rownames(seqtab.nochim)[1:50]
-```
+
 ```{r}
 rownames(seqtab.nochim) %>% length()
 ```
 
+
 ```{r}
 rownames(samdf) %>% length
 ```
+Empty samples were removed in pipeline, remove them here.  In other datasets there may be samples that need to be removed from the sequencing set that aren't in the metadata.
+
 ```{r}
-toremove = setdiff(rownames(seqtab.nochim),rownames(samdf))
+toremove = setdiff(rownames(samdf), rownames(seqtab.nochim))
 toremove
 ```
+
+
 ```{r}
+dim(seqtab.nochim)
 allsamples = rownames(samdf)
 allsamples = allsamples[!(allsamples %in% toremove)]
 seqtab.nochim2 = seqtab.nochim[allsamples,]
 seqtab.nochim2 %>% dim()
+
+samdf = samdf[allsamples,]
+dim(samdf)
 ```
+
+
+
 # Create phyloseq object
 ```{r}
 ps <- phyloseq(otu_table(seqtab.nochim2, taxa_are_rows=FALSE), 
@@ -467,16 +491,23 @@ ps <- phyloseq(otu_table(seqtab.nochim2, taxa_are_rows=FALSE),
                tax_table(taxa))
 ps
 ```
+
+
 ```{r}
-CheckOTU = taxa_names(ps)[150]
-CheckOTU
+# CheckOTU = taxa_names(ps)[150]
+# CheckOTU
 ```
+
 ```{r}
-ps %>% prune_taxa(CheckOTU,.) %>% otu_table()
+#ps %>% prune_taxa(CheckOTU,.) %>% otu_table()
 ```
+
 ```{r}
 sample_names(ps)[1:55]
 ```
+# Will need to stop here in order to combine sequencing runs
+
+# Exploration
 
 ## Rename taxa
 ```{r}
@@ -500,7 +531,7 @@ taxa_sums(ps)[1:10]
 ## Save full object
 ```{r}
 ps
-saveRDS(ps, file = file.path(OutFolder, 'BoydPhyloseqFull.rds')) 
+saveRDS(ps, file = file.path(OutFolder, 'MLSH_ITS_Plate3-4.rds')) 
 ```
 
 ## Threshold to remove minor sequences: sum(x > 3) > 3
@@ -530,6 +561,7 @@ head(Seqs_df)
 taxa_df = tax_table(ps.thresh)[,1:6]
 head(taxa_df)
 ```
+
 ```{r}
 #save table of seqs
 write.table(Seqs_df, file = file.path(OutFolder,'taxa_seqs.txt'), sep = '\t')
@@ -564,11 +596,56 @@ ps.thresh
 ```
 
 ```{r}
-outfile = file.path(OutFolder,'Boyd_phyloseq_thresh.rds')
-saveRDS(ps.thresh, file = outfile)
+#outfile = file.path(OutFolder,'Boyd_phyloseq_thresh.rds')
+#saveRDS(ps.thresh, file = outfile)
 ```
 
-# Next steps: sequences will be used to build a tree in a python script and then tree will be re-united with phyloseq object in subsequent notebook
+```{r}
+sample_data(ps.thresh)
+
+ps.KRC = ps.thresh %>% subset_samples(Location == "")
+ps.KRC
+sample_names(ps.KRC)
+sample_sums(ps.KRC)
+```
+```{r}
+plot_bar(ps.KRC, x = "sample", "Kingdom")
+plot_bar(ps.KRC, x="Sample", fill="Phylum")
+```
+```{r}
+ps.AMF = subset_taxa(ps.thresh, Phylum == "p__Glomeromycota")
+plot_bar(ps.AMF, x="Location", fill="Family")
+```
+hmmm, no AMF at all?  This doesn't sit right. Try without thresholding
+
+```{r}
+ps = readRDS(file = file.path(OutFolder, 'MLSH_ITS_Plate3-4.rds'))
+```
+
+```{r}
+ps.AMF = subset_taxa(ps, Phylum == "p__Glomeromycota")
+plot_bar(ps.AMF, x="Location", fill="Family")
+```
+Looks like many more sequences, now try with just Kelley
+
+```{r}
+ps.KRC = ps %>% subset_samples(Location == "")
+ps.KRC
+sample_names(ps.KRC)
+sample_sums(ps.KRC)
+
+ps.AMF = subset_taxa(ps.KRC, Phylum == "p__Glomeromycota")
+plot_bar(ps.AMF, x="Sample", fill="Family")
+```
+
+
+```{r}
+namestocheck = taxa_sums(ps.KRC) %>% sort(.,decreasing = TRUE) %>% .[1:25] %>% names()
+```
+```{r}
+tax_table(ps.KRC)[namestocheck,]
+```
+
 
 ```{r}
 sessionInfo()
