@@ -1,0 +1,82 @@
+---
+title: "Merge Runs and Build Phyloseq"
+output: html_notebook
+---
+
+Starting point is sequence tables built in previous DADA2 runs 
+
+```{r}
+ncores = 16
+OutFolder = "/project/mmicrobe/MLSH/ITS2/merged"
+
+
+## need to upload combined sample data sheet
+##Metadata file
+#SamData = "/project/mmicrobe/MLSH/ITS2/merged"
+```
+
+```{r}
+library(dada2)
+library(tidyverse)
+library(phyloseq)
+
+```
+
+# Read in and merge sequence tables
+```{r}
+
+
+# Merge multiple runs (if necessary)
+#Plate1 &2
+st1 <- readRDS("/project/mmicrobe/MLSH/ITS2/Plate1-2/st2.rds")
+#Plate3&4
+st2 <- readRDS("/project/mmicrobe/MLSH/ITS2/st2.rds")
+
+st.all <- mergeSequenceTables(st1, st2)
+     
+```
+
+
+```{r}
+dim(st1)
+dim(st2)
+dim(st.all)
+```
+```{r}
+st.all = collapseNoMismatch(st.all)
+
+outFile = file.path(OutFolder,"seqtab-merged.rds")
+
+saveRDS(st.all, outFile)
+```
+
+
+# Checkpoint
+read merged saqtab
+
+```{r}
+CheckPoint = file.path(OutFolder,"seqtab-merged.rds")
+
+seqtab.nochim = readRDS(CheckPoint)
+```
+
+
+
+# Assign Taxonomy
+Assigning taxonomy using the UNITE database 
+```{r}
+unite.ref <- "/project/mmicrobe/databases/sh_general_release_dynamic_18.07.2023.fasta"  # CHANGE ME to location on your machine
+taxa <- assignTaxonomy(seqtab.nochim, unite.ref, multithread = ncores, tryRC = TRUE)
+```
+```{r}
+taxa.print <- taxa  # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+
+```{r}
+outFile = file.path(OutFolder,'taxa.rds')
+outFile
+saveRDS(taxa, outFile)
+```

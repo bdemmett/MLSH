@@ -3,13 +3,13 @@
 ############### user inputs
 
 # specify paths of input and output folders
-dir='/project/mmicrobe/MLSH/ITS2/raw/lane1'
+dir='/project/mmicrobe/MLSH/ITS2/raw/Plate1-2/lane1'
 
 filtdir='filtN'
 filtdir="$dir/$filtdir"
 
 outdir='cutadapt'
-outdir="$dir/$outdir"
+dir2="$dir/$outdir"
 
 unTdir="untrimmed"
 dir3="$dir/$unTdir"
@@ -46,8 +46,8 @@ baseR1=${r1##*/}
 baseR2=${r2##*/}
 
 
-fnFsCut="$outdir/$baseR1"
-fnRsCut="$outdir/$baseR2"
+fnFsCut="$dir2/$baseR1"
+fnRsCut="$dir2/$baseR2"
 untrimmedF="$dir3/untrimmed.$baseR1"
 untrimmedR="$dir3/untrimmed.$baseR2"
 

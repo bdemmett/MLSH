@@ -3,7 +3,7 @@
 ############### user inputs
 
 # specify paths of input and output folders
-dir='/project/mmicrobe/MLSH/ITS2/raw/lane1'
+dir='/project/mmicrobe/MLSH/ITS2/raw/Plate1-2/lane1'
 
 filtdir='cutadapt'
 filtdir="$dir/$filtdir"
