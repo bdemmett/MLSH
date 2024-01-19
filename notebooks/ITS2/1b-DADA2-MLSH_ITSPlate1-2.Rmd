@@ -116,7 +116,7 @@ rbind(
     fn = fnFs.filtN[[1]]), 
   RSEQ.ReverseReads = sapply(RSEQ.orients, primerHits, fn = fnRs.filtN[[1]]))
 ```
-Hmm, this suggests that all of the reverse reads have the reverse complement of the forward sequencing primer and all of the forward reads have the reverse complement of the reverse sequencing primer. 
+Hmm, a few of the reverse reads have the reverse complement of the forward sequencing primer and a few of the forward reads have the reverse complement of the reverse sequencing primer. 
 
 # Execute cutadapt from bash script through ssh
 The system command was not working properly, so used R to generate adapter and RC sequences and ran bash_cutadapt.sh script.  
